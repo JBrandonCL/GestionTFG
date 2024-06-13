@@ -1,0 +1,52 @@
+
+services:
+  postgres-db:
+    container_name: postgres-db
+    image: postgres:12-alpine
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DATABASE}
+    ports:
+      - ${POSTGRES_PORT}:5432
+    volumes:
+      - ./database/gestion.sql:/docker-entrypoint-initdb.d/gestion.sql
+    networks:
+      - GestionMultas
+  mongo-db:
+    container_name: mongo-db
+    image: mongo:5.0
+    env_file: .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${DATABASE_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${DATABASE_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+    ports:
+      - ${MONGO_PORT}:27017
+    volumes:
+      - ./database/ticket.js:/docker-entrypoint-initdb.d/ticket.js:ro
+    networks:
+      - GestionMultas
+
+
+  gestion-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gestion-api
+    restart: always
+    env_file: .env.prod
+    ports:
+      - ${API_PORT}:3000
+    networks:
+      - GestionMultas
+    volumes:
+    - ./cert:/app/cert  
+    depends_on:
+      - postgres-db
+      - mongo-db
+
+networks:
+  GestionMultas:
+    driver: bridge
